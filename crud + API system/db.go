@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -11,9 +12,9 @@ import (
 )
 
 type Document struct {
-	Id      uuid.UUID
-	Author  string
-	Storage string
+	Id      uuid.UUID "json:id"
+	Author  string    "json:author"
+	Storage string    "json:storage"
 }
 
 type DbDocuments struct {
@@ -24,7 +25,7 @@ type DbDocuments struct {
 func InitDB(DBfilename string) DbDocuments {
 	Idocuments, err := parseDBfile(DBfilename)
 	if err != nil {
-		log.Fatalf("%e", err)
+		log.Printf("%e", err)
 	}
 
 	return DbDocuments{Filename: DBfilename, Documents: Idocuments}
@@ -50,7 +51,7 @@ func parseDBfile(filename string) (map[uuid.UUID]Document, error) {
 		}
 		parsedUUID, err := uuid.Parse(record[0])
 		if err != nil {
-			log.Fatalf("Error with converting string to UUID: %v", err)
+			log.Printf("Error with converting string to UUID: %v", err)
 		}
 		documents[parsedUUID] = Document{Id: parsedUUID, Author: record[1], Storage: record[2]}
 	}
@@ -58,40 +59,39 @@ func parseDBfile(filename string) (map[uuid.UUID]Document, error) {
 	return documents, nil
 }
 
-func (db *DbDocuments) SearchDocumentById(reqUUID string) string {
+func (db *DbDocuments) SearchDocumentById(reqUUID string) (Document, error) {
 	parseUUID, err := uuid.Parse(reqUUID)
 	if err != nil {
-		log.Fatalf("Error with converting string to UUID: %v", err)
+		log.Printf("Error with converting string to UUID: %v", err)
 	}
 	document, check := db.Documents[parseUUID]
 	if check {
-		return fmt.Sprintf("\nAuthor of document with id: %v is: %v", document.Id, document.Author)
+		return document, nil
 	} else {
-		return fmt.Sprintf("\nDocument with id: %v isnt exist", reqUUID)
+		return Document{}, errors.New("Document dont exist")
 	}
 }
 
-func (db *DbDocuments) CreateDocument(author string, storage string) string {
+func (db *DbDocuments) CreateDocument(author string, storage string) (Document, error) {
 	file, err := os.OpenFile(db.Filename, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
-		fmt.Println("\nОшибка открытия файла:", err)
-		return "\nError"
+		return Document{}, fmt.Errorf("\nОшибка открытия файла:", err)
 	}
 	defer file.Close()
 
 	newId := uuid.New()
 	_, err = file.Write([]byte(fmt.Sprintf("\n%v,%v,%v", newId, author, storage)))
 	if err != nil {
-		log.Fatal(err)
+		return Document{}, err
 	}
 	db.Documents[newId] = Document{Id: newId, Author: author, Storage: storage}
-	return fmt.Sprintf("\nDocument successfully create with id: %v", newId)
+	return db.Documents[newId], nil
 }
 
-func (db *DbDocuments) UpdateDocument(reqUUID string, newAuthor string, newStorage string) string {
+func (db *DbDocuments) UpdateDocument(reqUUID string, newAuthor string, newStorage string) (Document, error) {
 	UUID, err := uuid.Parse(reqUUID)
 	if err != nil {
-		log.Fatalf("Error with converting string to UUID: %v", err)
+		return Document{}, err
 	}
 
 	document, check := db.Documents[UUID]
@@ -100,29 +100,29 @@ func (db *DbDocuments) UpdateDocument(reqUUID string, newAuthor string, newStora
 		document.Storage = newStorage
 		db.Documents[UUID] = document
 	} else {
-		return fmt.Sprintf("\nDocument with id: %v isnt exist", reqUUID)
+		return Document{}, fmt.Errorf("\nDocument with id: %v isnt exist", reqUUID)
 	}
 	db.SaveToFile()
 
-	return fmt.Sprintf("\nDocument with id: %v successfully updated", reqUUID)
+	return db.Documents[UUID], err
 }
 
-func (db *DbDocuments) DeleteDocumentById(reqUUID string) string {
+func (db *DbDocuments) DeleteDocumentById(reqUUID string) error {
 	UUID, err := uuid.Parse(reqUUID)
 	if err != nil {
-		log.Fatalf("Error with converting string to UUID: %v", err)
+		return fmt.Errorf("Error with converting string to UUID: %v", err)
 	}
 
 	_, check := db.Documents[UUID]
 	if check {
 		delete(db.Documents, UUID)
 	} else {
-		return fmt.Sprintf("\nDocument with id: %v isnt exist", reqUUID)
+		return fmt.Errorf("\nDocument with id: %v isnt exist", reqUUID)
 	}
 
 	db.SaveToFile()
 
-	return fmt.Sprintf("\nDocument with id: %v successfully deleted", reqUUID)
+	return nil
 }
 
 func (db *DbDocuments) SaveToFile() error {
@@ -148,9 +148,4 @@ func (db *DbDocuments) SaveToFile() error {
 	}
 
 	return nil
-}
-
-func main() {
-	db := InitDB("C:/learning_go/api/apiTask/documents.csv")
-	fmt.Print(db.UpdateDocument("9a1e8c3a-5b9e-4e05-d2f7-1d47d2f7b8c3", "Реально Крутой Чел", "*реально крутые цитаты*"))
 }
