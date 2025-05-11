@@ -40,7 +40,7 @@ func (api *API) getDocumentHandler(w http.ResponseWriter, r *http.Request) {
 	id := vars["id"]
 	document, err := api.Db.SearchDocumentById(id)
 	if err != nil {
-		http.Error(w, err.Error(), 400)
+		http.Error(w, err.Error(), 404)
 	} else {
 		json.NewEncoder(w).Encode(document)
 	}
@@ -53,7 +53,7 @@ func (api *API) createDocumentHandler(w http.ResponseWriter, r *http.Request) {
 	name := vars["name"]
 	document, err := api.Db.CreateDocument(name, "storage")
 	if err != nil {
-		http.Error(w, err.Error(), 400)
+		http.Error(w, err.Error(), 404)
 	} else {
 		json.NewEncoder(w).Encode(document)
 	}
@@ -65,7 +65,7 @@ func (api *API) deleteDocumentHandler(w http.ResponseWriter, r *http.Request) {
 	id := vars["id"]
 	err := api.Db.DeleteDocumentById(id)
 	if err != nil {
-		http.Error(w, err.Error(), 400)
+		http.Error(w, err.Error(), 404)
 	} else {
 		w.Write([]byte(fmt.Sprintf("Delete id is: %v", id)))
 	}
@@ -76,7 +76,7 @@ func (api *API) updateDocumentHandler(w http.ResponseWriter, r *http.Request) {
 	id := vars["id"]
 	document, err := api.Db.SearchDocumentById(id)
 	if err != nil {
-		http.Error(w, err.Error(), 400)
+		http.Error(w, err.Error(), 404)
 	} else {
 		json.NewEncoder(w).Encode(document)
 	}
