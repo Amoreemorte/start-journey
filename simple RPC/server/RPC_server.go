@@ -16,7 +16,7 @@ func (s *Server) Send(request []string, responce *string) error {
 	return nil
 }
 
-func (s *Server) Messages(i int, responce *[]string) error {
+func (s *Server) Messages(_ struct{}, responce *[]string) error {
 	*responce = s.serverMessages
 	return nil
 }

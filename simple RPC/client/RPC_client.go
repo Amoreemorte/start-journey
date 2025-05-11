@@ -23,7 +23,7 @@ func main() {
 		log.Print(err)
 	}
 
-	err = client.Call("Server.Messages", 1, &request)
+	err = client.Call("Server.Messages", struct{}{}, &request)
 	if err != nil {
 		log.Print(err)
 	}
