@@ -12,11 +12,11 @@ type Server struct {
 
 func (s *Server) Send(request []string, responce *string) error {
 	s.serverMessages = append(s.serverMessages, request...)
-
+	log.Printf("Request: %v succesfully processed", request)
 	return nil
 }
 
-func (s *Server) Messages(_ struct{}, responce *[]string) error {
+func (s *Server) Messages(i int, responce *[]string) error {
 	*responce = s.serverMessages
 	return nil
 }
